@@ -1,16 +1,36 @@
 function toggleDone() {
-  $(this).parent().parent().toggleClass("success");
-  updateCounters();
+  var checkbox = this;
+  var tableRow = $(this).parent().parent();
+
+  var todoId = tableRow.data('id');
+  var isCompleted = !tableRow.hasClass("success");
+
+  $.ajax({
+    type: "PUT",
+    url: "/todos/" + todoId + ".json",
+    data: JSON.stringify({
+      todo: { completed: isCompleted }
+    }),
+    contentType: "application/json",
+    dataType: "json"
+  })
+  .done(function(data) {
+    console.log(data);
+
+    tableRow.toggleClass("success", data.completed);
+
+    updateCounters();
+  });
 }
 
 function updateCounters() {
-  $("#total-count").html($(".todo").size());
-  $("#completed-count").html($(".success").size());
-  $("#todo-count").html($(".todo").size() - $(".success").size());
+  $("#total-count").html($(".todo").length);
+  $("#completed-count").html($(".success").length);
+  $("#todo-count").html($(".todo").length - $(".success").length);
 }
 
 // function nextTodoId() {
-//   return $(".todo").size() + 1;
+//   return $(".todo").length + 1;
 // }
 
 function createTodo(title) {
@@ -80,8 +100,23 @@ function submitTodo(event) {
 
 function cleanUpDoneTodos(event) {
   event.preventDefault();
-  $.when($(".success").remove())
-    .then(updateCounters);
+
+  $.each($(".success"), function(index, tableRow) {
+    todoId = $(tableRow).data('id');
+    deleteTodo(todoId);
+  });
+}
+function deleteTodo(todoId) {
+  $.ajax({
+    type: "DELETE",
+    url: "/todos/" + todoId + ".json",
+    contentType: "application/json",
+    dataType: "json"
+  })
+  .done(function(data) {
+    $('tr[data-id="'+todoId+'"]').remove();
+    updateCounters();
+  });
 }
 
 $(document).ready(function() {
